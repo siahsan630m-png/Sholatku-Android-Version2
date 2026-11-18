@@ -11,15 +11,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Siapkan proyek (otomatis unzip jika yang diunggah file ZIP)
+    - name: Siapkan proyek (Otomatis cari dan unzip file ZIP apa saja)
       run: |
-        if [ -z "$(find . -maxdepth 3 -name settings.gradle | head -n 1)" ]; then
-          Z=$(ls *.zip | head -n 1)
-          echo "Membuka $Z"
+        Z=$(ls *.zip | head -n 1)
+        if [ -n "$Z" ]; then
+          echo "Membuka file $Z"
           mkdir -p _src
           unzip -q "$Z" -d _src
           S=$(find . -maxdepth 4 -name settings.gradle | head -n 1)
-          echo "PROJECT_DIR=$(dirname "$S")" >> "$GITHUB_ENV"
+          if [ -n "$S" ]; then
+            echo "PROJECT_DIR=$(dirname "$S")" >> "$GITHUB_ENV"
+          else
+            echo "PROJECT_DIR=." >> "$GITHUB_ENV"
+          fi
         else
           echo "PROJECT_DIR=." >> "$GITHUB_ENV"
         fi
@@ -42,4 +46,4 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: Sholatku-debug-apk
-        path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+        path: "**/build/outputs/apk/debug/*.apk"
