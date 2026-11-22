@@ -1,0 +1,49 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Siapkan proyek (Otomatis cari dan unzip file ZIP apa saja)
+      run: |
+        Z=$(ls *.zip | head -n 1)
+        if [ -n "$Z" ]; then
+          echo "Membuka file $Z"
+          mkdir -p _src
+          unzip -q "$Z" -d _src
+          S=$(find . -maxdepth 4 -name settings.gradle | head -n 1)
+          if [ -n "$S" ]; then
+            echo "PROJECT_DIR=$(dirname "$S")" >> "$GITHUB_ENV"
+          else
+            echo "PROJECT_DIR=." >> "$GITHUB_ENV"
+          fi
+        else
+          echo "PROJECT_DIR=." >> "$GITHUB_ENV"
+        fi
+
+    - uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: '8.9'
+
+    - name: Build APK debug
+      run: |
+        cd "$PROJECT_DIR"
+        chmod +x gradlew 2>/dev/null || true
+        ./gradlew assembleDebug --stacktrace
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Sholatku-debug-apk
+        path: "**/build/outputs/apk/debug/*.apk"
